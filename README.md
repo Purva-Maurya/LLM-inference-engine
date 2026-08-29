@@ -19,6 +19,7 @@ Most ML engineers call `model.generate()` and never see what's inside. This proj
 | 4 | Batched inference | `batched_generate.py`, `benchmark_batching.py` | **2.55x speedup** over sequential generation |
 | 5 | Continuous batching scheduler | `continuous_batching.py` | Dynamic request admission/eviction, no idle compute waiting on the slowest sequence |
 | 6 | Paged KV cache | `paged_cache.py`, `paged_generate.py` | Block-based memory allocation (PagedAttention-style), verified correct end-to-end |
+| 7 | INT8 quantization (per-tensor + per-channel) | `quantize.py` | **4x memory reduction**; per-tensor quantization degraded generation quality, per-channel measurably improved fidelity but didn't fully eliminate it |
 
 ## Architecture
 
@@ -62,9 +63,18 @@ python paged_generate.py
 - **All-masked-row NaN**: combining causal + padding masks can fully mask a row (softmax → `NaN`), which silently corrupts the whole batch through residual connections. Fixed by guaranteeing every position can attend to itself.
 - **Paged memory**: KV cache is split into fixed-size blocks; any request can use any available block via a per-request block table, avoiding both over-allocation and fragmentation — the same idea behind OS virtual memory paging.
 
+## Week 7 findings: quantization tradeoffs
+
+Implemented INT8 weight quantization at two granularities and compared generation quality against the fp32 baseline:
+
+- **Per-tensor quantization**: 4x memory reduction, small per-weight reconstruction error (mean abs error ~0.009), but generation diverged into a different repetitive pattern than the original.
+- **Per-channel quantization**: same 4x memory reduction, measurably better fidelity — exactly reproduced the original model's opening sentence — but still fell into its own repetition loop after that.
+
+This suggests that while finer-grained quantization reduces error, the residual error is still large enough to affect generation dynamics on a small (124M parameter) model, particularly under greedy decoding. Worth testing with sampling instead of greedy decoding, and/or on a larger model, as a next step.
+
 ## What's next
 
-- Quantization (INT8/INT4) and speed/memory/quality tradeoff benchmarks
+- Test quantized models with temperature/top-p sampling instead of greedy decoding
 - Speculative decoding with a draft model
 - Wiring paged cache into the continuous batching scheduler for full production-style serving
 
