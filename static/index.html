@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM Inference Engine — datasheet</title>
+    <style>
+        :root {
+            --paper: #f3f2ec;
+            --panel: #fffffd;
+            --ink: #1a1e1a;
+            --ink-dim: #565c54;
+            --ink-faint: #96998e;
+            --line: #dedcd0;
+            --line-strong: #c4c1b2;
+            --accent: #2c5aa0;
+            --accent-dim: #17325c;
+            --accent-bg: rgba(44, 90, 160, 0.07);
+            --accent-soft: rgba(44, 90, 160, 0.16);
+            --serif: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+            --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            --sans: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            --shadow-sm: 0 1px 2px rgba(20, 20, 15, 0.04), 0 1px 1px rgba(20, 20, 15, 0.03);
+            --shadow-md: 0 8px 24px -8px rgba(20, 20, 15, 0.16), 0 2px 6px -2px rgba(20, 20, 15, 0.08);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            background: var(--paper);
+            background-image: radial-gradient(circle at 50% -10%, rgba(44, 90, 160, 0.05), transparent 55%);
+            color: var(--ink);
+            font-family: var(--sans);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            padding: 44px 20px 60px;
+        }
+
+        .sheet {
+            width: 100%;
+            max-width: 900px;
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+            animation: rise 0.5s cubic-bezier(.2, .7, .3, 1) both;
+        }
+
+        @keyframes rise {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .accent-bar {
+            height: 4px;
+            background: linear-gradient(90deg, var(--accent-dim), var(--accent) 45%, #6f9bd6 100%);
+        }
+
+        /* ---------- Header strip ---------- */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px 30px;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .mark {
+            width: 22px;
+            height: 22px;
+            color: var(--accent);
+            flex-shrink: 0;
+        }
+
+        .header-id {
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: 0.06em;
+            color: var(--ink-dim);
+        }
+
+        .header-id b {
+            color: var(--ink);
+            font-weight: 600;
+        }
+
+        .header a {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--ink-dim);
+            text-decoration: none;
+            border: 1px solid var(--line-strong);
+            padding: 6px 12px;
+            border-radius: 6px;
+            transition: border-color 0.15s, color 0.15s, background 0.15s;
+        }
+
+        .header a:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: var(--accent-bg);
+        }
+
+        /* ---------- Hero ---------- */
+        .hero {
+            padding: 46px 30px 36px;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .hero-eyebrow {
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .hero-eyebrow::before {
+            content: "";
+            width: 16px;
+            height: 1px;
+            background: var(--accent);
+            display: inline-block;
+        }
+
+        h1 {
+            font-family: var(--serif);
+            font-weight: 400;
+            font-size: clamp(28px, 4.2vw, 38px);
+            line-height: 1.28;
+            letter-spacing: -0.005em;
+            margin: 0 0 16px;
+            max-width: 20ch;
+            color: var(--ink);
+        }
+
+        h1 em {
+            font-style: italic;
+            color: var(--accent-dim);
+        }
+
+        .hero p {
+            color: var(--ink-dim);
+            font-size: 15px;
+            line-height: 1.7;
+            max-width: 60ch;
+            margin: 0;
+        }
+
+        .hero code {
+            font-family: var(--mono);
+            background: var(--accent-bg);
+            color: var(--accent-dim);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        /* ---------- Two column: spec + console ---------- */
+        .grid {
+            display: grid;
+            grid-template-columns: 260px 1fr;
+        }
+
+        @media (max-width: 700px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .specs {
+            border-right: 1px solid var(--line);
+            padding: 28px 26px;
+            background: linear-gradient(180deg, rgba(44, 90, 160, 0.02), transparent 120px);
+        }
+
+        @media (max-width: 700px) {
+            .specs {
+                border-right: none;
+                border-bottom: 1px solid var(--line);
+            }
+        }
+
+        .col-label {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--ink-faint);
+            margin-bottom: 18px;
+            font-weight: 600;
+        }
+
+        .spec-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            padding: 8px 0;
+            border-bottom: 1px dotted var(--line);
+            gap: 12px;
+        }
+
+        .spec-row:last-child {
+            border-bottom: none;
+        }
+
+        .spec-key {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--ink-faint);
+            letter-spacing: 0.03em;
+            white-space: nowrap;
+        }
+
+        .spec-val {
+            font-family: var(--mono);
+            font-size: 12.5px;
+            color: var(--ink);
+            font-weight: 600;
+            text-align: right;
+        }
+
+        /* ---------- Console ---------- */
+        .console {
+            padding: 28px 30px;
+        }
+
+        .field-label {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--ink-faint);
+            margin-bottom: 9px;
+            font-weight: 600;
+        }
+
+        .prompt-box {
+            display: flex;
+            align-items: center;
+            border: 1.5px solid var(--line-strong);
+            background: var(--paper);
+            border-radius: 8px;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+
+        .prompt-box:focus-within {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-soft);
+            background: var(--panel);
+        }
+
+        .prompt-box span {
+            font-family: var(--mono);
+            color: var(--accent);
+            padding: 0 0 0 14px;
+            font-size: 14px;
+        }
+
+        #promptInput {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--ink);
+            font-family: var(--mono);
+            font-size: 13.5px;
+            padding: 13px 14px;
+        }
+
+        #promptInput::placeholder {
+            color: var(--ink-faint);
+        }
+
+        .controls-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 16px;
+            flex-wrap: wrap;
+            gap: 14px;
+        }
+
+        .token-control {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            font-family: var(--mono);
+            font-size: 11.5px;
+            color: var(--ink-dim);
+        }
+
+        .token-control input[type="range"] {
+            accent-color: var(--accent);
+            width: 100px;
+        }
+
+        .token-control .val {
+            color: var(--accent-dim);
+            min-width: 22px;
+            display: inline-block;
+            font-weight: 700;
+            background: var(--accent-bg);
+            padding: 1px 6px;
+            border-radius: 4px;
+        }
+
+        button#runBtn {
+            font-family: var(--mono);
+            font-size: 12px;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            background: var(--ink);
+            color: var(--panel);
+            border: 1px solid var(--ink);
+            padding: 11px 20px;
+            border-radius: 7px;
+            cursor: pointer;
+            font-weight: 600;
+            box-shadow: var(--shadow-sm);
+            transition: background 0.15s, transform 0.08s, box-shadow 0.15s;
+        }
+
+        button#runBtn:hover {
+            background: var(--accent-dim);
+            border-color: var(--accent-dim);
+            box-shadow: 0 4px 10px -3px rgba(23, 50, 92, 0.4);
+            transform: translateY(-1px);
+        }
+
+        button#runBtn:active {
+            transform: translateY(0);
+        }
+
+        button#runBtn:disabled {
+            background: var(--panel);
+            color: var(--ink-faint);
+            border-color: var(--line);
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
+        }
+
+        /* ---------- Output readout ---------- */
+        .readout {
+            margin-top: 22px;
+            border: 1px solid var(--line);
+            border-left: 3px solid var(--accent);
+            border-radius: 0 8px 8px 0;
+            background-image:
+                linear-gradient(var(--line) 1px, transparent 1px),
+                linear-gradient(90deg, var(--line) 1px, transparent 1px);
+            background-size: 22px 22px;
+            background-color: #fbfaf6;
+            min-height: 68px;
+            padding: 16px 18px;
+            opacity: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: opacity 0.3s ease, max-height 0.3s ease, padding 0.3s ease;
+        }
+
+        .readout.visible {
+            opacity: 1;
+            max-height: 400px;
+            padding: 16px 18px;
+        }
+
+        .readout-label {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: 0.1em;
+            color: var(--ink-faint);
+            margin-bottom: 9px;
+            font-weight: 600;
+        }
+
+        .output-text {
+            font-family: var(--mono);
+            font-size: 13.5px;
+            line-height: 1.75;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .output-text .prompt-part {
+            color: var(--ink-faint);
+        }
+
+        .output-text .gen-part {
+            color: var(--ink);
+        }
+
+        .telemetry {
+            display: flex;
+            gap: 0;
+            margin-top: 16px;
+            padding-top: 13px;
+            border-top: 1px solid var(--line);
+        }
+
+        .telemetry .stat {
+            font-family: var(--mono);
+            font-size: 11px;
+            padding: 0 18px;
+            border-right: 1px solid var(--line);
+        }
+
+        .telemetry .stat:first-child {
+            padding-left: 0;
+        }
+
+        .telemetry .stat:last-child {
+            border-right: none;
+        }
+
+        .telemetry .stat-label {
+            color: var(--ink-faint);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-size: 10px;
+        }
+
+        .telemetry .stat-value {
+            color: var(--accent-dim);
+            font-size: 14px;
+            margin-top: 3px;
+            font-weight: 700;
+        }
+
+        .error-text {
+            font-family: var(--mono);
+            font-size: 12.5px;
+            color: #a13a2f;
+        }
+
+        /* ---------- Benchmark table ---------- */
+        .bench-section {
+            border-top: 1px solid var(--line);
+            padding: 28px 30px 32px;
+        }
+
+        table.bench {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: var(--mono);
+            font-size: 12.5px;
+            margin-top: 16px;
+        }
+
+        table.bench th {
+            text-align: left;
+            font-size: 10.5px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--ink-faint);
+            font-weight: 600;
+            padding: 0 10px 10px 0;
+            border-bottom: 1.5px solid var(--line-strong);
+        }
+
+        table.bench th.num {
+            text-align: right;
+        }
+
+        table.bench td {
+            padding: 12px 10px 12px 0;
+            border-bottom: 1px dotted var(--line);
+            color: var(--ink);
+            vertical-align: middle;
+        }
+
+        table.bench tr:hover td {
+            background: var(--accent-bg);
+        }
+
+        table.bench td.num {
+            color: var(--accent-dim);
+            font-weight: 700;
+            text-align: right;
+            white-space: nowrap;
+        }
+
+        table.bench td.metric {
+            color: var(--ink-dim);
+        }
+
+        .bar-cell {
+            width: 34%;
+        }
+
+        .bar-track {
+            height: 6px;
+            background: var(--line);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-dim), var(--accent));
+            border-radius: 3px;
+        }
+
+        /* ---------- Footer ---------- */
+        footer {
+            border-top: 1px solid var(--line);
+            padding: 18px 30px;
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--ink-faint);
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 8px;
+            background: var(--paper);
+        }
+
+        footer a {
+            color: var(--ink-dim);
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            color: var(--accent);
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+
+            .readout,
+            .sheet {
+                transition: none;
+                animation: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="sheet">
+        <div class="accent-bar"></div>
+
+        <div class="header">
+            <div class="header-left">
+                <svg class="mark" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M2 12H6L8.5 5L13 19L15.5 12H22" stroke="currentColor" stroke-width="1.6"
+                        stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <div class="header-id">DOC <b>LLM-INF-ENGINE</b> · REV 8 · GPT-2 (124M)</div>
+            </div>
+            <a href="https://github.com/Purva-Maurya/LLM-inference-engine" target="_blank" rel="noopener">SOURCE ↗</a>
+        </div>
+
+        <div class="hero">
+            <div class="hero-eyebrow">Inference engine — reference implementation</div>
+            <h1>A GPT-2 inference engine, <em>built from raw tensors up.</em></h1>
+            <p>
+                No <code>model.generate()</code>. Forward pass, sampling, KV caching, batching, a continuous
+                batching scheduler, paged memory, and quantization — each implemented, verified against a
+                reference implementation, and benchmarked. Run it below.
+            </p>
+        </div>
+
+        <div class="grid">
+            <div class="specs">
+                <div class="col-label">Model spec</div>
+                <div class="spec-row"><span class="spec-key">ARCHITECTURE</span><span class="spec-val">GPT-2</span>
+                </div>
+                <div class="spec-row"><span class="spec-key">PARAMETERS</span><span class="spec-val">124M</span></div>
+                <div class="spec-row"><span class="spec-key">LAYERS</span><span class="spec-val">12</span></div>
+                <div class="spec-row"><span class="spec-key">ATTN HEADS</span><span class="spec-val">12</span></div>
+                <div class="spec-row"><span class="spec-key">D_MODEL</span><span class="spec-val">768</span></div>
+                <div class="spec-row"><span class="spec-key">VOCAB</span><span class="spec-val">50,257</span></div>
+                <div class="spec-row"><span class="spec-key">DECODING</span><span class="spec-val">greedy + KV
+                        cache</span></div>
+                <div class="spec-row"><span class="spec-key">VERIFIED</span><span class="spec-val">100% argmax
+                        match</span></div>
+                <div class="spec-row"><span class="spec-key">BUILT</span><span class="spec-val">8 weeks, from
+                        scratch</span></div>
+            </div>
+
+            <div class="console">
+                <div class="field-label">Prompt</div>
+                <div class="prompt-box">
+                    <span>&gt;</span>
+                    <input id="promptInput" type="text" placeholder="The future of artificial intelligence is"
+                        autocomplete="off" />
+                </div>
+
+                <div class="controls-row">
+                    <div class="token-control">
+                        <label for="tokenSlider">max_new_tokens</label>
+                        <input type="range" id="tokenSlider" min="5" max="60" value="30" />
+                        <span class="val" id="tokenVal">30</span>
+                    </div>
+                    <button id="runBtn">Run inference</button>
+                </div>
+
+                <div class="readout" id="readout">
+                    <div class="readout-label">OUTPUT</div>
+                    <div id="outputArea"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bench-section">
+            <div class="col-label">Measured benchmarks</div>
+            <table class="bench">
+                <thead>
+                    <tr>
+                        <th>Optimization</th>
+                        <th class="bar-cell"></th>
+                        <th class="num">Speedup</th>
+                        <th>Metric</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>KV caching</td>
+                        <td class="bar-cell">
+                            <div class="bar-track">
+                                <div class="bar-fill" style="width:81%"></div>
+                            </div>
+                        </td>
+                        <td class="num">3.24×</td>
+                        <td class="metric">18.2 → 59.0 tok/s</td>
+                    </tr>
+                    <tr>
+                        <td>Batched inference</td>
+                        <td class="bar-cell">
+                            <div class="bar-track">
+                                <div class="bar-fill" style="width:64%"></div>
+                            </div>
+                        </td>
+                        <td class="num">2.55×</td>
+                        <td class="metric">vs. sequential generation</td>
+                    </tr>
+                    <tr>
+                        <td>INT8 quantization</td>
+                        <td class="bar-cell">
+                            <div class="bar-track">
+                                <div class="bar-fill" style="width:100%"></div>
+                            </div>
+                        </td>
+                        <td class="num">4.00×</td>
+                        <td class="metric">memory reduction</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <footer>
+            <span>Every component implemented and verified by hand — no shortcuts.</span>
+            <span><a href="/docs" target="_blank">API docs (/docs) ↗</a></span>
+        </footer>
+    </div>
+
+    <script>
+        const promptInput = document.getElementById('promptInput');
+        const runBtn = document.getElementById('runBtn');
+        const outputArea = document.getElementById('outputArea');
+        const readout = document.getElementById('readout');
+        const tokenSlider = document.getElementById('tokenSlider');
+        const tokenVal = document.getElementById('tokenVal');
+
+        tokenSlider.addEventListener('input', () => {
+            tokenVal.textContent = tokenSlider.value;
+        });
+
+        async function runInference() {
+            const prompt = promptInput.value.trim() || promptInput.placeholder;
+            const maxNewTokens = parseInt(tokenSlider.value, 10);
+
+            runBtn.disabled = true;
+            runBtn.textContent = 'RUNNING…';
+            readout.classList.add('visible');
+            outputArea.innerHTML = '<div class="output-text">processing…</div>';
+
+            const start = performance.now();
+
+            try {
+                const res = await fetch('/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: prompt, max_new_tokens: maxNewTokens })
+                });
+
+                if (!res.ok) throw new Error('server responded with ' + res.status);
+
+                const data = await res.json();
+                const elapsed = ((performance.now() - start) / 1000).toFixed(2);
+                const tokensPerSec = (maxNewTokens / parseFloat(elapsed)).toFixed(1);
+
+                const fullText = data.generated_text;
+                const promptPart = data.prompt;
+                const genPart = fullText.startsWith(promptPart) ? fullText.slice(promptPart.length) : fullText;
+
+                outputArea.innerHTML = `
+        <div class="output-text"><span class="prompt-part">${escapeHtml(promptPart)}</span><span class="gen-part">${escapeHtml(genPart)}</span></div>
+        <div class="telemetry">
+          <div class="stat"><div class="stat-label">Latency</div><div class="stat-value">${elapsed}s</div></div>
+          <div class="stat"><div class="stat-label">Throughput</div><div class="stat-value">${tokensPerSec} tok/s</div></div>
+          <div class="stat"><div class="stat-label">Tokens</div><div class="stat-value">${maxNewTokens}</div></div>
+        </div>
+      `;
+            } catch (err) {
+                outputArea.innerHTML = `<div class="error-text">Request failed: ${escapeHtml(err.message)}. Is the server running?</div>`;
+            } finally {
+                runBtn.disabled = false;
+                runBtn.textContent = 'Run inference';
+            }
+        }
+
+        function escapeHtml(str) {
+            const d = document.createElement('div');
+            d.textContent = str;
+            return d.innerHTML;
+        }
+
+        runBtn.addEventListener('click', runInference);
+        promptInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') runInference(); });
+    </script>
+</body>
+
+</html>
