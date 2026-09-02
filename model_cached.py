@@ -68,15 +68,22 @@ def forward_cached(input_ids, past_caches=None, past_length=0):
     logits = x @ wte.T
     return logits, new_caches
 
+from sampling import sample_with_temperature_and_topp
+
+from sampling import sample_with_temperature_and_topp
+
 @torch.no_grad()
-def generate_cached(prompt, max_new_tokens=30):
+def generate_cached(prompt, max_new_tokens=30, temperature=1.0, top_p=None):
     input_ids = tokenizer.encode(prompt, return_tensors="pt")
 
     # --- Prefill: process the whole prompt at once ---
     logits, caches = forward_cached(input_ids, past_caches=None, past_length=0)
     past_length = input_ids.shape[1]
 
-    next_id = torch.argmax(logits[0, -1, :]).item()
+    if top_p is not None:
+        next_id = sample_with_temperature_and_topp(logits[0, -1, :], temperature, top_p)
+    else:
+        next_id = torch.argmax(logits[0, -1, :]).item()
     generated = input_ids[0].tolist() + [next_id]
 
     # --- Decode: one new token at a time, reusing the cache ---
@@ -85,14 +92,16 @@ def generate_cached(prompt, max_new_tokens=30):
         logits, caches = forward_cached(next_input, past_caches=caches, past_length=past_length)
         past_length += 1
 
-        next_id = torch.argmax(logits[0, -1, :]).item()
+        if top_p is not None:
+            next_id = sample_with_temperature_and_topp(logits[0, -1, :], temperature, top_p)
+        else:
+            next_id = torch.argmax(logits[0, -1, :]).item()
         generated.append(next_id)
 
         if next_id == tokenizer.eos_token_id:
             break
 
     return tokenizer.decode(generated)
-
 
 if __name__ == "__main__":
     output = generate_cached("The future of artificial intelligence is", max_new_tokens=30)
