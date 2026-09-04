@@ -1,7 +1,7 @@
 
 # TERA - Transformer Engine for Rapid Autoregression. 
 
-###A lightweight LLM inference engine built from scratch for autoregressive text generation.
+
 
 A GPT-2 inference engine built entirely from raw weight tensors — no `model.generate()`, no `nn.MultiheadAttention`, no high-level shortcuts. Every component (embeddings, attention, sampling, caching, batching, memory paging) is implemented and verified by hand, then benchmarked for real performance gains.
 
