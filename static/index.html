@@ -600,88 +600,89 @@
                 <div class="spec-row"><span class="spec-key">ATTN HEADS</span><span class="spec-val">12</span></div>
                 <div class="spec-row"><span class="spec-key">D_MODEL</span><span class="spec-val">768</span></div>
                 <div class="spec-row"><span class="spec-key">VOCAB</span><span class="spec-val">50,257</span></div>
-                <div class="spec-row"><span class="spec-key">DECODING</span><span class="spec-val">greedy + KV
+                <div class="spec-row"><span class="spec-key">DECODING</span><span class="spec-val">top-p + KV
                         cache</span></div>
-                <div class="spec-row"><span class="spec-key">VERIFIED</span><span class="spec-val">100% argmax
-                        match</span></div>
-                <div class="spec-row"><span class="spec-key">BUILT</span><span class="spec-val">8 weeks, from
-                        scratch</span></div>
             </div>
-
-            <div class="console">
-                <div class="field-label">Prompt</div>
-                <div class="prompt-box">
-                    <span>&gt;</span>
-                    <input id="promptInput" type="text" placeholder="The future of artificial intelligence is"
-                        autocomplete="off" />
-                </div>
-
-                <div class="controls-row">
-                    <div class="token-control">
-                        <label for="tokenSlider">max_new_tokens</label>
-                        <input type="range" id="tokenSlider" min="5" max="60" value="30" />
-                        <span class="val" id="tokenVal">30</span>
-                    </div>
-                    <button id="runBtn">Run inference</button>
-                </div>
-
-                <div class="readout" id="readout">
-                    <div class="readout-label">OUTPUT</div>
-                    <div id="outputArea"></div>
-                </div>
-            </div>
+            <div class="spec-row"><span class="spec-key">VERIFIED</span><span class="spec-val">100% argmax
+                    match</span></div>
+            <div class="spec-row"><span class="spec-key">BUILT</span><span class="spec-val">8 weeks, from
+                    scratch</span></div>
         </div>
 
-        <div class="bench-section">
-            <div class="col-label">Measured benchmarks</div>
-            <table class="bench">
-                <thead>
-                    <tr>
-                        <th>Optimization</th>
-                        <th class="bar-cell"></th>
-                        <th class="num">Speedup</th>
-                        <th>Metric</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>KV caching</td>
-                        <td class="bar-cell">
-                            <div class="bar-track">
-                                <div class="bar-fill" style="width:81%"></div>
-                            </div>
-                        </td>
-                        <td class="num">3.24×</td>
-                        <td class="metric">18.2 → 59.0 tok/s</td>
-                    </tr>
-                    <tr>
-                        <td>Batched inference</td>
-                        <td class="bar-cell">
-                            <div class="bar-track">
-                                <div class="bar-fill" style="width:64%"></div>
-                            </div>
-                        </td>
-                        <td class="num">2.55×</td>
-                        <td class="metric">vs. sequential generation</td>
-                    </tr>
-                    <tr>
-                        <td>INT8 quantization</td>
-                        <td class="bar-cell">
-                            <div class="bar-track">
-                                <div class="bar-fill" style="width:100%"></div>
-                            </div>
-                        </td>
-                        <td class="num">4.00×</td>
-                        <td class="metric">memory reduction</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+        <div class="console">
+            <div class="field-label">Prompt</div>
+            <div class="prompt-box">
+                <span>&gt;</span>
+                <input id="promptInput" type="text" placeholder="The future of artificial intelligence is"
+                    autocomplete="off" />
+            </div>
 
-        <footer>
-            <span>Every component implemented and verified by hand — no shortcuts.</span>
-            <span><a href="/docs" target="_blank">API docs (/docs) ↗</a></span>
-        </footer>
+            <div class="controls-row">
+                <div class="token-control">
+                    <label for="tokenSlider">max_new_tokens</label>
+                    <input type="range" id="tokenSlider" min="5" max="60" value="30" />
+                    <span class="val" id="tokenVal">30</span>
+                </div>
+                <button id="runBtn">Run inference</button>
+            </div>
+
+            <div class="readout" id="readout">
+                <div class="readout-label">OUTPUT</div>
+                <div id="outputArea"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bench-section">
+        <div class="col-label">Measured benchmarks</div>
+        <table class="bench">
+            <thead>
+                <tr>
+                    <th>Optimization</th>
+                    <th class="bar-cell"></th>
+                    <th class="num">Speedup</th>
+                    <th>Metric</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>KV caching</td>
+                    <td class="bar-cell">
+                        <div class="bar-track">
+                            <div class="bar-fill" style="width:81%"></div>
+                        </div>
+                    </td>
+                    <td class="num">3.24×</td>
+                    <td class="metric">18.2 → 59.0 tok/s</td>
+                </tr>
+                <tr>
+                    <td>Batched inference</td>
+                    <td class="bar-cell">
+                        <div class="bar-track">
+                            <div class="bar-fill" style="width:64%"></div>
+                        </div>
+                    </td>
+                    <td class="num">2.55×</td>
+                    <td class="metric">vs. sequential generation</td>
+                </tr>
+                <tr>
+                    <td>INT8 quantization</td>
+                    <td class="bar-cell">
+                        <div class="bar-track">
+                            <div class="bar-fill" style="width:100%"></div>
+                        </div>
+                    </td>
+                    <td class="num">4.00×</td>
+                    <td class="metric">memory reduction</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <footer>
+        <span>Every component implemented and verified by hand — no shortcuts.</span>
+        <span><a href="/docs" target="_blank">API docs (/docs) ↗</a></span>
+    </footer>
     </div>
 
     <script>
@@ -711,7 +712,7 @@
                 const res = await fetch('/generate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt: prompt, max_new_tokens: maxNewTokens })
+                    body: JSON.stringify({ prompt: prompt, max_new_tokens: maxNewTokens, temperature: 0.8, top_p: 0.9 })
                 });
 
                 if (!res.ok) throw new Error('server responded with ' + res.status);
