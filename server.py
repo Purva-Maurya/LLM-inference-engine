@@ -4,7 +4,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from model_cached import generate_cached
 
-app = FastAPI(title="LLM Inference Engine", description="A hand-built GPT-2 inference engine with KV caching.")
+app = FastAPI(title="TERA : Transformer Engine for Autoregressive Inference", description="A hand-built GPT-2 inference engine with KV caching.")
 
 
 class GenerateRequest(BaseModel):
@@ -27,7 +27,7 @@ def root():
 @app.get("/api")
 def api_info():
     return {
-        "message": "LLM Inference Engine is running.",
+        "message": "TERA : Transformer Engine for Autoregressive Inference is running.",
         "docs": "/docs",
         "endpoint": "POST /generate"
     }
