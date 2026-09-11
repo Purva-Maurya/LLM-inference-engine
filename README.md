@@ -22,7 +22,7 @@ Most ML engineers call `model.generate()` and never see what's inside. This proj
 | 5 | Continuous batching scheduler | `continuous_batching.py` | Dynamic request admission/eviction, no idle compute waiting on the slowest sequence |
 | 6 | Paged KV cache | `paged_cache.py`, `paged_generate.py` | Block-based memory allocation (PagedAttention-style), verified correct end-to-end |
 | 7 | INT8 quantization (per-tensor + per-channel) | `quantize.py` | **4x memory reduction**; per-tensor quantization degraded generation quality, per-channel measurably improved fidelity but didn't fully eliminate it |
-| 8| Paged KV cache memory savings Simulated 30 concurrent requests with varying actual lengths (5–63 tokens, avg. 27.1) against a 64-token worst-case reservation. TERA's paged cache used 214 blocks vs. 480 blocks for naive static allocation, resulting in a **55.4% reduction** in KV-cache memory usage (2.24× less memory).
+| 8| Paged KV cache memory benchmark | `test_memory_accounting.py` | **55.4% KV-cache memory reduction (2.24× less memory)** in a 30-request variable-length workload |
 
 
 ## Architecture
