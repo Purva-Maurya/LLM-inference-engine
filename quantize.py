@@ -67,7 +67,7 @@ def quantize_model_weights(blocks):
                 W_int8, scale = quantize_tensor(tensor)
                 q_block[key] = dequantize_tensor(W_int8, scale)  # store dequantized for easy drop-in use
             else:
-                q_block[key] = tensor  # biases stay fp32, tiny anyway
+                q_block[key] = tensor.clone()  # biases stay fp32, tiny anyway
         quantized_blocks.append(q_block)
     return quantized_blocks
 
@@ -118,7 +118,7 @@ def quantize_model_weights_per_channel(blocks):
                 W_int8, scale = quantize_tensor_per_channel(tensor, dim=0)
                 q_block[key] = dequantize_tensor_per_channel(W_int8, scale)
             else:
-                q_block[key] = tensor
+                q_block[key] = tensor.clone()
         quantized_blocks.append(q_block)
     return quantized_blocks
 
