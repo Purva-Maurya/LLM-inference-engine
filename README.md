@@ -5,7 +5,7 @@
 
 A GPT-2 inference engine built entirely from raw weight tensors — no `model.generate()`, no `nn.MultiheadAttention`, no high-level shortcuts. Every component (embeddings, attention, sampling, caching, batching, memory paging) is implemented and verified by hand, then benchmarked for real performance gains.
 
-Built incrementally over six weeks, each with working code, debugged bugs, and measured results.
+Built incrementally through ten development milestones, each with working code, debugged bugs, and measured results.
 
 ## Why this project
 
@@ -24,6 +24,8 @@ Most ML engineers call `model.generate()` and never see what's inside. This proj
 | 7 | INT8 quantization (per-tensor + per-channel) | `quantize.py` | **4x memory reduction**; per-tensor quantization degraded generation quality, per-channel measurably improved fidelity but didn't fully eliminate it |
 | 8| Paged KV cache memory benchmark | `test_memory_accounting.py` | **55.4% KV-cache memory reduction (2.24× less memory)** in a 30-request variable-length workload |
 | 9 | TTFT latency benchmarking | `test_latency_percentiles.py` | **p50: 24.0ms, p95: 44.5ms, p99: 58.8ms** across 25 randomized requests with simulated Poisson arrivals |
+| 10 | Quantization quality evaluation | `test_quantization_perplexity.py` | Perplexity-based comparison of FP32, INT8 per-tensor, and INT8 per-channel models on a fixed evaluation corpus |
+
 
 ## TTFT Latency Benchmark
 
@@ -34,6 +36,54 @@ Measured Time To First Token (TTFT) across 25 requests with randomized prompts a
 - **p99:** 58.8 ms
 
 An initial run without warm-up produced a 934.7 ms p99 due to a one-time cold-start outlier on the first request. After adding an unmeasured warm-up call, p99 dropped to 58.8 ms while p50 and p95 remained unchanged, isolating the cold-start cost from steady-state inference latency.
+
+**## Quantization Quality Evaluation**
+
+Memory reduction alone does not fully measure the quality of a quantized language model. TERA therefore evaluates quantization using **causal language-model perplexity (PPL)** in addition to memory usage.
+
+Perplexity measures how well the model predicts the **actual next tokens** in a fixed evaluation corpus. For each token, the model is evaluated on the probability assigned to the actual next token rather than the token generated during sampling.
+
+\[
+PPL = \exp\left(-\frac{1}{N}\sum_{i=1}^{N}\log P(x_i|x_{<i})\right)
+\]
+
+Lower perplexity indicates better next-token prediction performance.
+
+### Evaluation Setup
+
+The same fixed **297-token evaluation corpus** was passed through three model configurations:
+
+\- **FP32** — baseline model
+
+\- **INT8 per-tensor** — weights quantized using a single scale per tensor
+
+\- **INT8 per-channel** — weights quantized using independent scales across output channels
+
+The same text and tokenization were used across all configurations to ensure a consistent comparison.
+
+### Results
+
+**| Configuration | Precision | Perplexity | Δ vs FP32 | Weight Memory |**
+
+**|---|---|---:|---:|---:|**
+
+**| TERA baseline | FP32 | **34.719** | — | 324.0 MB |**
+
+**| TERA | INT8 per-tensor | **36.797** | **+6.0%** | 81.0 MB |**
+
+**| TERA | INT8 per-channel | **33.412** | **−3.8%** | 81.0 MB |**
+
+### Observations
+
+\- **INT8 per-tensor** reduced weight memory from **324.0 MB to 81.0 MB**, achieving a **4× reduction**, while increasing perplexity by **6.0%**.
+
+\- **INT8 per-channel** achieved the same **4× weight-memory reduction** while producing lower perplexity than the FP32 baseline on this evaluation corpus (**33.412 vs. 34.719**).
+
+\- The FP32 model was verified to remain **unmutated** after both quantization runs, confirming that the original baseline remained intact during comparison.
+
+Overall, the results show that **per-channel quantization preserved next-token prediction quality better than per-tensor quantization** in this evaluation.
+
+> **Note:** The evaluation corpus contains 297 tokens. These results represent a small-scale quality benchmark; a larger held-out corpus would provide a more robust estimate of perplexity.
 
 
 ## Architecture
