@@ -23,6 +23,17 @@ Most ML engineers call `model.generate()` and never see what's inside. This proj
 | 6 | Paged KV cache | `paged_cache.py`, `paged_generate.py` | Block-based memory allocation (PagedAttention-style), verified correct end-to-end |
 | 7 | INT8 quantization (per-tensor + per-channel) | `quantize.py` | **4x memory reduction**; per-tensor quantization degraded generation quality, per-channel measurably improved fidelity but didn't fully eliminate it |
 | 8| Paged KV cache memory benchmark | `test_memory_accounting.py` | **55.4% KV-cache memory reduction (2.24× less memory)** in a 30-request variable-length workload |
+| 9 | TTFT latency benchmarking | `test_latency_percentiles.py` | **p50: 24.0ms, p95: 44.5ms, p99: 58.8ms** across 25 randomized requests with simulated Poisson arrivals |
+
+## TTFT Latency Benchmark
+
+Measured Time To First Token (TTFT) across 25 requests with randomized prompts and simulated Poisson arrivals.
+
+- **p50:** 24.0 ms
+- **p95:** 44.5 ms
+- **p99:** 58.8 ms
+
+An initial run without warm-up produced a 934.7 ms p99 due to a one-time cold-start outlier on the first request. After adding an unmeasured warm-up call, p99 dropped to 58.8 ms while p50 and p95 remained unchanged, isolating the cold-start cost from steady-state inference latency.
 
 
 ## Architecture
