@@ -2,7 +2,7 @@ import math
 import torch
 from model import tokenizer, wte, wpe, blocks, ln_f_w, ln_f_b, layer_norm, mlp, split_heads
 from paged_cache import BlockPool, PagedRequest, write_kv, gather_kv
-
+from sampling import sample_with_temperature_and_topp
 
 def attention_paged(x, block, layer_idx, pool, req):
     B, T, C = x.shape  # B=1, T=1 (one new token at a time)
@@ -52,9 +52,9 @@ def forward_paged(token_id, position, pool, req):
 
 
 @torch.no_grad()
-def generate_paged(prompt, max_new_tokens, pool):
+def generate_paged(prompt, max_new_tokens, pool, temperature=1.0, top_p=None, request_id=0):
     prompt_ids = tokenizer.encode(prompt)
-    req = PagedRequest(request_id=0, pool=pool)
+    req = PagedRequest(request_id=request_id, pool=pool)
 
     logits = None
     # Prefill: feed prompt tokens one at a time (simple, if not maximally efficient)
@@ -62,7 +62,10 @@ def generate_paged(prompt, max_new_tokens, pool):
         req.append_token_slot()
         logits = forward_paged(tid, pos, pool, req)
 
-    next_id = torch.argmax(logits[0, -1, :]).item()
+    if top_p is not None:
+        next_id = sample_with_temperature_and_topp(logits[0, -1, :], temperature, top_p)
+    else:
+        next_id = torch.argmax(logits[0, -1, :]).item()
     generated = prompt_ids + [next_id]
 
     # Decode: one new token at a time
@@ -71,7 +74,10 @@ def generate_paged(prompt, max_new_tokens, pool):
         req.append_token_slot()
         logits = forward_paged(next_id, pos, pool, req)
 
-        next_id = torch.argmax(logits[0, -1, :]).item()
+        if top_p is not None:
+            next_id = sample_with_temperature_and_topp(logits[0, -1, :], temperature, top_p)
+        else:
+            next_id = torch.argmax(logits[0, -1, :]).item()
         generated.append(next_id)
 
         if next_id == tokenizer.eos_token_id:
@@ -83,5 +89,5 @@ def generate_paged(prompt, max_new_tokens, pool):
 
 if __name__ == "__main__":
     pool = BlockPool(num_blocks=64, block_size=4)
-    output = generate_paged("The future of artificial intelligence is", max_new_tokens=30, pool=pool)
+    output = generate_paged("The future of artificial intelligence is", max_new_tokens=30, pool=pool, temperature=0.8, top_p=0.9)
     print(output)
