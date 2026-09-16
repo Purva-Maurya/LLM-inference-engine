@@ -57,7 +57,6 @@ def generate_paged(prompt, max_new_tokens, pool, temperature=1.0, top_p=None, re
     req = PagedRequest(request_id=request_id, pool=pool)
 
     logits = None
-    # Prefill: feed prompt tokens one at a time (simple, if not maximally efficient)
     for pos, tid in enumerate(prompt_ids):
         req.append_token_slot()
         logits = forward_paged(tid, pos, pool, req)
@@ -68,7 +67,6 @@ def generate_paged(prompt, max_new_tokens, pool, temperature=1.0, top_p=None, re
         next_id = torch.argmax(logits[0, -1, :]).item()
     generated = prompt_ids + [next_id]
 
-    # Decode: one new token at a time
     for _ in range(max_new_tokens - 1):
         pos = req.num_tokens
         req.append_token_slot()
